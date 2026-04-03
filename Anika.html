@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Happy Birthday, Anika 🌸</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@500;700&display=swap" rel="stylesheet"/>
+
+<style>
+/* ── VARIABLES ───────────────────────────────────────────── */
+:root {
+  --cream:      #fdf6ec;
+  --parchment:  #f0dfc0;
+  --rose:       #e8a0a0;
+  --rose-deep:  #c96a6a;
+  --brown:      #7a4f35;
+  --ink:        #3a2a1a;
+  --gold:       #d4a843;
+  --gold-light: #f0d080;
+  --shadow:     rgba(90,50,20,0.2);
+  --W: 820px;
+  --H: 560px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 30% 20%, #f9e8d8 0%, #ecdcc8 45%, #d4bfa0 100%);
+  font-family: 'Lora', Georgia, serif;
+  color: var(--ink);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+/* ── PETALS ──────────────────────────────────────────────── */
+#petals-canvas {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── MUSIC BTN ───────────────────────────────────────────── */
+.music-btn {
+  position: fixed; top: 18px; right: 22px; z-index: 100;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(8px);
+  border: 2px solid var(--rose);
+  color: var(--rose-deep);
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px var(--shadow);
+  transition: transform .2s;
+}
+.music-btn:hover { transform: scale(1.1); }
+.music-btn.playing { animation: spin 4s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── BOOK SCENE ──────────────────────────────────────────── */
+.book-scene {
+  position: relative; z-index: 10;
+  perspective: 2200px;
+  width: var(--W);
+}
+
+/* SPINE */
+.book-spine {
+  position: absolute; left: -30px; top: 0;
+  width: 30px; height: var(--H);
+  background: linear-gradient(to right, #6b3520, #9e5228, #6b3520);
+  border-radius: 5px 0 0 5px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  box-shadow: -4px 0 14px rgba(0,0,0,0.35);
+}
+.spine-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 5px var(--gold-light);
+}
+.spine-text {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font-family: 'Dancing Script', cursive;
+  color: var(--gold-light); font-size: 10px; letter-spacing: 1.5px;
+}
+
+/* BOOK COVER */
+.book-cover {
+  width: var(--W); height: var(--H);
+  position: relative; transform-style: preserve-3d;
+  border-radius: 4px 16px 16px 4px;
+  box-shadow:
+    -6px 10px 32px rgba(0,0,0,0.38),
+    -2px 2px 8px rgba(0,0,0,0.18),
+    inset -4px 0 10px rgba(0,0,0,0.1);
+}
+
+/* ── PAGES ───────────────────────────────────────────────── */
+.page {
+  position: absolute; inset: 0;
+  width: var(--W); height: var(--H);
+  background: var(--cream);
+  border-radius: 4px 16px 16px 4px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  transform-origin: left center;
+  transition: transform .75s cubic-bezier(.645,.045,.355,1), opacity .4s;
+}
+
+/* ruled lines texture */
+.page::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; z-index: 10;
+  background-image: repeating-linear-gradient(
+    0deg, transparent, transparent 31px,
+    rgba(160,120,80,.055) 32px
+  );
+}
+
+/* page corner fold */
+.page::after {
+  content: '';
+  position: absolute; bottom: 0; right: 0; z-index: 10;
+  border-style: solid;
+  border-width: 0 0 30px 30px;
+  border-color: transparent transparent var(--parchment) transparent;
+  filter: drop-shadow(-2px -2px 3px rgba(0,0,0,.07));
+}
+
+.page.active       { transform: rotateY(0deg);   z-index:5; opacity:1; pointer-events:all; }
+.page.hidden-right { transform: rotateY(0deg);   z-index:1; opacity:0; pointer-events:none; }
+.page.behind       { transform: rotateY(0deg);   z-index:2; opacity:0; pointer-events:none; }
+.page.flipping-out { transform: rotateY(-90deg); z-index:8; pointer-events:none;
+                     box-shadow: -20px 0 40px rgba(0,0,0,.22); }
+.page.flipping-in  { transform: rotateY(90deg);  z-index:7; opacity:1; pointer-events:none; }
+
+/* page number */
+.pg-num {
+  position: absolute; bottom: 12px; right: 18px; z-index: 20;
+  font-family: 'Playfair Display', serif; font-style: italic;
+  font-size: 11px; color: var(--rose-deep); opacity: .65;
+}
+
+/* ── COVER PAGE ──────────────────────────────────────────── */
+.cover-inner {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; padding: 40px;
+  background: linear-gradient(150deg, #fdf0e0, #f7e2cc, #fdf0e0);
+}
+.cover-flower { font-size: 52px; animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+.cover-big   { font-family:'Playfair Display',serif; font-size:36px; font-weight:700; color:var(--brown); text-align:center; line-height:1.2; }
+.cover-name  { font-family:'Dancing Script',cursive; font-size:54px; color:var(--rose-deep); text-shadow:0 2px 12px rgba(200,100,100,.2); }
+.cover-sub   { font-family:'Lora',serif; font-style:italic; font-size:14px; color:var(--ink); opacity:.8; text-align:center; line-height:1.7; }
+.open-btn {
+  margin-top:6px; padding:11px 34px;
+  background: linear-gradient(135deg, var(--rose-deep), #a84848);
+  color:#fff; font-family:'Lora',serif; font-style:italic;
+  font-size:13px; border:none; border-radius:30px; cursor:pointer;
+  box-shadow:0 4px 16px rgba(180,80,80,.35);
+  transition: transform .2s, box-shadow .2s; letter-spacing:.5px;
+}
+.open-btn:hover { transform:translateY(-2px); box-shadow:0 8px 22px rgba(180,80,80,.4); }
+
+/* ── STORY PAGE — side by side layout ───────────────────── */
+.story-inner {
+  width: 100%; height: 100%;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  overflow: hidden;
+}
+
+/* LEFT: full height image */
+.story-img-col {
+  position: relative;
+  width: 320px;
+  height: 100%;
+  background: var(--parchment);
+  border-right: 3px solid rgba(200,160,100,.3);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.story-img-col img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  position: relative;
+  z-index: 2;
+}
+/* soft fade on right edge of image */
+.story-img-col::after {
+  content: '';
+  position: absolute; inset: 0; z-index: 3;
+  background: linear-gradient(to right, transparent 80%, rgba(253,246,236,.55) 100%);
+  pointer-events: none;
+}
+/* placeholder — shown only when image fails */
+.img-placeholder {
+  position: absolute; inset: 0; z-index: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; background: var(--parchment);
+  color: var(--rose); opacity: .7;
+}
+.img-placeholder svg  { width:44px; height:44px; }
+.img-placeholder span {
+  font-family:'Lora',serif; font-style:italic;
+  font-size:11px; color:var(--brown);
+  text-align:center; line-height:1.5;
+}
+
+/* RIGHT: text */
+.story-text-col {
+  padding: 38px 34px 38px 30px;
+  display: flex; flex-direction: column;
+  justify-content: center; gap: 16px;
+  overflow: hidden;
+}
+.ch-label {
+  font-family:'Dancing Script',cursive;
+  font-size:12px; color:var(--rose-deep);
+  letter-spacing:2.5px; text-transform:uppercase; opacity:.9;
+}
+.ch-title {
+  font-family:'Playfair Display',serif;
+  font-size:21px; font-weight:700;
+  color:var(--brown); line-height:1.35;
+}
+.ch-title span { color:var(--rose-deep); }
+.ch-divider {
+  display:flex; align-items:center; gap:8px;
+}
+.ch-divider::before,.ch-divider::after {
+  content:''; flex:1; height:1px;
+  background:linear-gradient(to right,transparent,var(--rose),transparent);
+}
+.ch-divider-icon { color:var(--rose-deep); font-size:14px; }
+.ch-msg {
+  font-family:'Lora',serif; font-style:italic;
+  font-size:14px; color:var(--ink); line-height:1.88;
+}
+.ch-msg strong { font-style:normal; color:var(--brown); font-weight:600; }
+
+/* ── FINAL PAGE ──────────────────────────────────────────── */
+.final-inner {
+  width:100%; height:100%;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:13px; padding:40px;
+  background:linear-gradient(150deg,#fff0f5,#fde0d0,#fff0f5);
+}
+.final-emoji  { font-size:32px; display:flex; gap:12px; animation:float 4s ease-in-out infinite; }
+.final-hb     { font-family:'Playfair Display',serif; font-size:28px; font-weight:700; color:var(--brown); }
+.final-name   { font-family:'Dancing Script',cursive; font-size:64px; color:var(--rose-deep);
+                text-shadow:0 2px 14px rgba(200,100,100,.22); animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+.final-msg    { font-family:'Lora',serif; font-style:italic; font-size:14px; color:var(--ink);
+                line-height:1.9; text-align:center; max-width:480px; }
+.final-emoji2 { font-size:22px; display:flex; gap:10px; }
+
+/* ── NAV ─────────────────────────────────────────────────── */
+.nav-area {
+  position:relative; z-index:20;
+  display:flex; align-items:center; gap:22px;
+}
+.nav-btn {
+  padding:10px 28px;
+  background:transparent; border:2px solid var(--rose-deep);
+  color:var(--rose-deep); font-family:'Lora',serif;
+  font-style:italic; font-size:13px; border-radius:30px;
+  cursor:pointer; transition:all .22s; letter-spacing:.4px;
+}
+.nav-btn:hover { background:var(--rose-deep); color:#fff; transform:translateY(-2px); box-shadow:0 4px 14px rgba(180,80,80,.3); }
+.nav-btn:disabled { opacity:.3; cursor:not-allowed; transform:none; box-shadow:none; }
+.page-ind {
+  font-family:'Dancing Script',cursive; font-size:17px;
+  color:var(--brown); min-width:58px; text-align:center; opacity:.85;
+}
+
+/* ── DOTS ────────────────────────────────────────────────── */
+.dots { position:relative; z-index:20; display:flex; gap:8px; }
+.dot  { width:7px; height:7px; border-radius:50%; background:var(--rose); opacity:.3; cursor:pointer; transition:all .3s; }
+.dot.on { opacity:1; background:var(--rose-deep); transform:scale(1.3); }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media(max-width:880px){
+  :root{ --W:96vw; --H:70vw; }
+  .book-spine{ display:none; }
+  .story-img-col{ width:40%; }
+  .story-inner{ grid-template-columns:40% 1fr; }
+  .ch-title{ font-size:15px; }
+  .ch-msg{ font-size:12px; line-height:1.7; }
+  .story-text-col{ padding:18px 16px; gap:10px; }
+  .cover-big{ font-size:24px; }
+  .cover-name{ font-size:38px; }
+  .final-name{ font-size:44px; }
+  .final-hb{ font-size:22px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="petals-canvas"></canvas>
+<button class="music-btn" id="musicBtn" title="Play / Pause">🎵</button>
+<audio id="bgMusic" loop>
+  <source src="https://cdn.pixabay.com/download/audio/2024/02/28/audio_fbe2973c89.mp3" type="audio/mpeg"/>
+  <source src="https://cdn.pixabay.com/download/audio/2022/10/25/audio_546a9427cf.mp3" type="audio/mpeg"/>
+</audio>
+
+<!-- ══════ BOOK ══════ -->
+<div class="book-scene">
+  <div class="book-spine">
+    <div class="spine-dot"></div>
+    <div class="spine-text">Anika's Story</div>
+    <div class="spine-dot"></div>
+    <div class="spine-dot"></div>
+    <div class="spine-text">🌸 Birthday</div>
+    <div class="spine-dot"></div>
+  </div>
+
+  <div class="book-cover">
+
+    <!-- PAGE 1 — COVER -->
+    <div class="page active" data-page="1">
+      <div class="cover-inner">
+        <div class="cover-flower">🌸</div>
+        <div class="cover-big">And it's your Birthdayyyyy<br/>Written for</div>
+        <div class="cover-name">Queenika</div>
+        <p class="cover-sub">Happiest Birthday to my friend<br/>stepped a little further into a magical year…</p>
+        <button class="open-btn" onclick="goNext()">Open the Book →</button>
+      </div>
+      <div class="pg-num">Cover</div>
+    </div>
+
+    <!-- PAGE 2 — Chapter 1
+         EDIT TEXT: change the <p class="ch-msg"> content
+         EDIT IMAGE: change the img src="" to your photo link -->
+    <div class="page hidden-right" data-page="2">
+      <div class="story-inner">
+        <div class="story-img-col">
+          <img src="https://i.ibb.co.com/cKWjMMh6/photo-2026-03-28-20-19-20-2.jpg" alt="Anika"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+          <div class="img-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Your photo<br/>goes here</span>
+          </div>
+        </div>
+        <div class="story-text-col">
+          <div class="ch-label">Chapter One</div>
+          <div class="ch-title">The Day the World Got<br/><span>A Little Brighter</span></div>
+          <div class="ch-divider"><span class="ch-divider-icon">🌸</span></div>
+          <p class="ch-msg">On a day much like any other, the universe quietly decided to do something quite extraordinary — it brought <strong>you</strong> into the story. And somehow the universe connected us.</p>
+        </div>
+      </div>
+      <div class="pg-num">1</div>
+    </div>
+
+    <!-- PAGE 3 — Chapter 2 -->
+    <div class="page hidden-right" data-page="3">
+      <div class="story-inner">
+        <div class="story-img-col">
+          <img src="https://i.ibb.co.com/tpJ2qChK/photo-2026-03-28-20-21-12.jpg" alt="Anika"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+          <div class="img-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Your photo<br/>goes here</span>
+          </div>
+        </div>
+        <div class="story-text-col">
+          <div class="ch-label">Chapter Two</div>
+          <div class="ch-title">The Girl with the<br/><span>Warmest Laugh </span></div>
+          <div class="ch-divider"><span class="ch-divider-icon">🌷</span></div>
+          <p class="ch-msg">I saw you laughing, I saw you crying. Maybe I saw you in the lowest mental state in your life. But I really want to see your most brighest smile. May Allah SWT give me that chance to see that. Keep smiling Anika.</p>
+        </div>
+      </div>
+      <div class="pg-num">2</div>
+    </div>
+
+    <!-- PAGE 4 — Chapter 3 -->
+    <div class="page hidden-right" data-page="4">
+      <div class="story-inner">
+        <div class="story-img-col">
+          <img src="https://i.ibb.co.com/2YpCJX5R/photo-2026-03-28-20-22-18.jpg" alt="Anika"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+          <div class="img-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Your photo<br/>goes here</span>
+          </div>
+        </div>
+        <div class="story-text-col">
+          <div class="ch-label">Chapter Three</div>
+          <div class="ch-title">The Iconic and<br/><span>Photo of us with this Jhalmuri mama Umbrella</span></div>
+          <div class="ch-divider"><span class="ch-divider-icon">🍃</span></div>
+          <p class="ch-msg">We have few photos but probably this is the most celebrated one xD I have another one with the umbrella but didn't find that among my 5000 photos in my phone. <strong>The most photogenic person ever</strong> Lens of camera knows how beautiful you are, as well my eyes and probably with my glasses too</p>
+        </div>
+      </div>
+      <div class="pg-num">3</div>
+    </div>
+
+    <!-- PAGE 5 — Chapter 4 -->
+    <div class="page hidden-right" data-page="5">
+      <div class="story-inner">
+        <div class="story-img-col">
+          <img src="https://i.ibb.co.com/spFNJgKg/photo-2026-03-28-20-22-19.jpg" alt="Anika"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+          <div class="img-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Your photo<br/>goes here</span>
+          </div>
+        </div>
+        <div class="story-text-col">
+          <div class="ch-label">Chapter Four</div>
+          <div class="ch-title">The Bepar ache photo<br/><span>"Era duita eksathe shaari punjabi porse, era sure prem kore"</span></div>
+          <div class="ch-divider"><span class="ch-divider-icon">✨</span></div>
+          <p class="ch-msg">Look at my smile. I was fking sad that day, but I can't stopping laughing as well. Because I was thinking "Sure, eita dekhlei 46 er shobai bolbe era duita kore prem." But ora jodi janto (Sad emoji with extra heartbroken energy). Eidine tomar chobi gula onek shundor ashchilo, but tumi upload diso shob baka frame wala chobi gula. Oidin ami first realize korchi, Okay. Or je chobi pochondo shegula amar worst shots. But then ami ekdin realize korlam actually frame a tumi acho manei chobi shundor, it doesn't matter frame is levelled or not. THE MOST PHOTOGENIC FACE.</p>
+        </div>
+      </div>
+      <div class="pg-num">4</div>
+    </div>
+
+    <!-- PAGE 6 — Chapter 5 -->
+    <div class="page hidden-right" data-page="6">
+      <div class="story-inner">
+        <div class="story-img-col">
+          <img src="https://i.ibb.co.com/3yFsBWM7/photo-2026-03-28-21-00-11.jpg" alt="Anika"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+          <div class="img-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Your photo<br/>goes here</span>
+          </div>
+        </div>
+        <div class="story-text-col">
+          <div class="ch-label">Chapter Five</div>
+          <div class="ch-title">Probably the most beautiful photo of yours.<br/><span></span></div>
+          <div class="ch-divider"><span class="ch-divider-icon">🌼</span></div>
+          <p class="ch-msg">This photo is the most natural photo of yours, specially for me arki. Nothing so special but that breeze. Oidin onek brishty chilo. Eidin o amar onek mon kharap chilo, Abbu ammu Hajj a gesilo. But thank you again to you, to others je you guys didn't give me that chance to be sad. Onek shundor day chilo, onek brishty still so good day. Also ei jama ta onek shundor.</p>
+        </div>
+      </div>
+      <div class="pg-num">5</div>
+    </div>
+
+    <!-- PAGE 7 — Chapter 6 -->
+    <div class="page hidden-right" data-page="7">
+      <div class="story-inner">
+        <div class="story-img-col">
+          <img src="https://i.ibb.co.com/XrJPcR93/photo-2026-03-28-21-00-21.jpg" alt="Anika"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+          <div class="img-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Your photo<br/>goes here</span>
+          </div>
+        </div>
+        <div class="story-text-col">
+          <div class="ch-label">Chapter Six</div>
+          <div class="ch-title">Kothin raag kora day<br/>of <span>You</span></div>
+          <div class="ch-divider"><span class="ch-divider-icon">🕊️</span></div>
+          <p class="ch-msg">Cha khaite jai nai dekhe tumi raag korchila, kothin raag. Ami vabtesilam ajke shesh, ajker por intern er moddhe ar kono kotha bolbe na o amader sathe. Jao eitar protidaan hishabe tomake majhe majhe class a cha khawabone.</p>
+        </div>
+      </div>
+      <div class="pg-num">6</div>
+    </div>
+
+    <!-- PAGE 8 — Chapter 7 -->
+    <div class="page hidden-right" data-page="8">
+      <div class="story-inner">
+        <div class="story-img-col">
+          <img src="https://i.ibb.co.com/Hf5jkXZf/photo-2026-03-29-00-21-13-2.jpg" alt="Anika"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+          <div class="img-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Your photo<br/>goes here</span>
+          </div>
+        </div>
+        <div class="story-text-col">
+          <div class="ch-label">Chapter Seven</div>
+          <div class="ch-title">Laage ura dhura day<br/><span>with the Gajra</span></div>
+          <div class="ch-divider"><span class="ch-divider-icon">⭐</span></div>
+          <p class="ch-msg">Oidin tomader duijon er nacher jodi kono competitor thake sheita hoilam ami ar Gourab. Adhara apu bolsilo eita xD. Uni aro bolse je few steps amra bhalo nachsi. But pore bollam apu bhalo naicha ki labh ami ki ar oder moto shudor. You danced too good, both of youu. But ki nach ta je disi amra. Nachar por inhealer neya lagse 2 bar.</p>
+        </div>
+      </div>
+      <div class="pg-num">7</div>
+    </div>
+
+    <!-- PAGE 9 — Chapter 8 -->
+    <div class="page hidden-right" data-page="9">
+      <div class="story-inner">
+        <div class="story-img-col">
+          <img src="https://i.ibb.co.com/Hpt3ftnn/photo-2026-03-29-00-58-46.jpg" alt="Anika"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+          <div class="img-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Your photo<br/>goes here</span>
+          </div>
+        </div>
+        <div class="story-text-col">
+          <div class="ch-label">Chapter Eight</div>
+          <div class="ch-title">MY POV<br/>in<span>Canteen</span></div>
+          <div class="ch-divider"><span class="ch-divider-icon">💌</span></div>
+          <p class="ch-msg">Ekta porota, daal vaji, cha and thousands of gossip. This was the day when I shared famous Love triology of our Dept xD. Good old days. Age nasta korte jawar shomoy lok er ovab chilona ar ekhon..purai gg. But yes another good photo of you and 100% natural.</p>
+        </div>
+      </div>
+      <div class="pg-num">8</div>
+    </div>
+
+    <!-- PAGE 10 — Chapter 9 -->
+    <div class="page hidden-right" data-page="10">
+      <div class="story-inner">
+        <div class="story-img-col">
+          <img src="https://i.ibb.co.com/p6QVs3xY/photo-2026-03-28-20-19-20.jpg" alt="Anika"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+          <div class="img-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Your photo<br/>goes here</span>
+          </div>
+        </div>
+        <div class="story-text-col">
+          <div class="ch-label">Chapter Nine</div>
+          <div class="ch-title">A dream of mine<br/><span>with Three episodes</span></div>
+          <div class="ch-divider"><span class="ch-divider-icon">🌺</span></div>
+          <p class="ch-msg">Amar je shopno ta chilo, oitar sathe ei chobi taar o ekta connection chilo. Probably ei place and ei jama ta e pora chili oi shopner moddhe tumi xD. Oi shopno taar detailing gula onek peak chilo. Oi shopno tar episode 3 te tomar sathe amar ekta convo hoy, and tumi eitar shamne daray amake oi convo ta bolo and suddenly erpor Shahzy aisha tomake niye jay. Bodmaish ekta o, ajibon amar kajer moddhe aisha bagra badhay. But Shahzy manush bhalo, eijonno vodro mohila ke ami shomiho kore choli. Tomar uchit chilo ei chobi ta dp mara, khub koshto paisi dp na deyate khub. </p>
+        </div>
+      </div>
+      <div class="pg-num">9</div>
+    </div>
+
+    <!-- PAGE 11 — FINAL -->
+    <div class="page hidden-right" data-page="11">
+      <div class="final-inner">
+        <div class="final-emoji">🎂 🎉 🎊</div>
+        <div class="final-hb">Thank You Anika for everything</div>
+        <div class="final-name">Again Happy Birthday Anika</div>
+        <div class="ch-divider" style="width:65%;"><span class="ch-divider-icon">🌸</span></div>
+        <p class="final-msg">I really admire you, I have already told you this maybe for thousand times, but I will always tell this to everyone. Thank you for motivating me and saving me xD. Prolly oi ekta incident e amake BUTEX a rakhsen. Also amader form chakrir exam er shomoy jeta joma ditesilam, oidin tomar gesture ta. I won't forget this. I always pray for you. Allah tomar shob iccha puron koruk, shob. Onek bhalo thako Anika. Biye koro joldi, amake korba na ami jani, but jaake iccha koiro. Biyer por Thailand, Indonesia, Pataya shob ghure aisho. Probably konodin jodi shujog hoy onek rare situation tho, Sea beach er dhaare tomar ekta chobi tulbo. <br/><br/><strong> I have learnt all of this thing overnight! Bujhla na tao amar effort. Bhalo thaiko Anika Always, Sometimes words are not enough to say everything. Onek dua kori</strong></p>
+        <div class="final-emoji2">🌷 ✨ 🌷</div>
+      </div>
+      <div class="pg-num">The End 🌸</div>
+    </div>
+
+  </div><!-- /book-cover -->
+</div><!-- /book-scene -->
+
+<!-- NAV -->
+<div class="nav-area">
+  <button class="nav-btn" id="prevBtn" onclick="goPrev()" disabled>← Previous</button>
+  <div class="page-ind" id="pageInd">1 / 11</div>
+  <button class="nav-btn" id="nextBtn" onclick="goNext()">Next →</button>
+</div>
+<div class="dots" id="dotsWrap"></div>
+
+<script>
+const TOTAL=11; let cur=1, busy=false;
+const pages=document.querySelectorAll('.page');
+const prevBtn=document.getElementById('prevBtn');
+const nextBtn=document.getElementById('nextBtn');
+const pageInd=document.getElementById('pageInd');
+const dotsWrap=document.getElementById('dotsWrap');
+const musicBtn=document.getElementById('musicBtn');
+const music=document.getElementById('bgMusic');
+
+/* dots */
+for(let i=1;i<=TOTAL;i++){
+  const d=document.createElement('div');
+  d.className='dot'+(i===1?' on':'');
+  d.onclick=()=>jumpTo(i);
+  dotsWrap.appendChild(d);
+}
+
+const pg=n=>pages[n-1];
+const sc=(el,cls)=>{ el.className='page '+cls; };
+
+function goNext(){
+  if(busy||cur>=TOTAL)return; busy=true;
+  const from=pg(cur),to=pg(cur+1);
+  sc(to,'flipping-in');
+  setTimeout(()=>{ sc(from,'flipping-out');
+    setTimeout(()=>{ sc(to,'active');
+      setTimeout(()=>{ sc(from,'behind'); cur++; updateUI(); busy=false; },380);
+    },310);
+  },20);
+}
+
+function goPrev(){
+  if(busy||cur<=1)return; busy=true;
+  const from=pg(cur),to=pg(cur-1);
+  sc(to,'flipping-in');
+  setTimeout(()=>{ sc(from,'flipping-out');
+    setTimeout(()=>{ sc(to,'active');
+      setTimeout(()=>{ sc(from,'hidden-right'); cur--; updateUI(); busy=false; },380);
+    },310);
+  },20);
+}
+
+function jumpTo(t){
+  if(busy||t===cur)return;
+  if(t>cur){ let c=0,s=t-cur; (function step(){ if(c++<s){ goNext(); setTimeout(step,820); } })(); }
+  else     { let c=0,s=cur-t; (function step(){ if(c++<s){ goPrev(); setTimeout(step,820); } })(); }
+}
+
+function updateUI(){
+  prevBtn.disabled=cur<=1; nextBtn.disabled=cur>=TOTAL;
+  pageInd.textContent=cur+' / '+TOTAL;
+  document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('on',i+1===cur));
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') goNext();
+  if(e.key==='ArrowLeft' ||e.key==='ArrowUp')   goPrev();
+});
+
+musicBtn.addEventListener('click',()=>{
+  if(music.paused){ music.play().catch(()=>{}); musicBtn.classList.add('playing'); musicBtn.textContent='🎵'; }
+  else { music.pause(); musicBtn.classList.remove('playing'); musicBtn.textContent='🔇'; }
+});
+window.addEventListener('click',()=>{
+  if(music.paused){ music.volume=0.4; music.play().catch(()=>{}); musicBtn.classList.add('playing'); }
+},{ once:true });
+
+/* ── PETALS ── */
+(function(){
+  const canvas=document.getElementById('petals-canvas');
+  const ctx=canvas.getContext('2d');
+  const resize=()=>{ canvas.width=innerWidth; canvas.height=innerHeight; };
+  resize(); window.addEventListener('resize',resize);
+  const COLORS=['rgba(240,180,180,.72)','rgba(255,205,205,.65)','rgba(220,165,165,.7)',
+                'rgba(255,225,225,.6)','rgba(200,220,195,.65)','rgba(250,230,205,.68)'];
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  const mk=y=>({
+    x:rnd(0,canvas.width), y:y??rnd(-200,-5),
+    vy:rnd(.7,1.9), vx:rnd(-.6,.6),
+    angle:rnd(0,Math.PI*2), spin:rnd(-.028,.028),
+    w:rnd(10,22), h:rnd(6,13),
+    color:COLORS[Math.floor(Math.random()*COLORS.length)],
+    sway:rnd(.3,1.1), swayS:rnd(.008,.022),
+    swayO:rnd(0,Math.PI*2), op:rnd(.5,.92)
+  });
+  const petals=Array.from({length:42},(_,i)=>mk(rnd(-canvas.height,canvas.height)));
+  let t=0;
+  (function loop(){
+    ctx.clearRect(0,0,canvas.width,canvas.height); t++;
+    petals.forEach(p=>{
+      p.y+=p.vy; p.x+=p.vx+Math.sin(t*p.swayS+p.swayO)*p.sway; p.angle+=p.spin;
+      if(p.y>canvas.height+30||p.x<-50||p.x>canvas.width+50) Object.assign(p,mk());
+      ctx.save(); ctx.globalAlpha=p.op;
+      ctx.translate(p.x,p.y); ctx.rotate(p.angle);
+      ctx.beginPath(); ctx.ellipse(0,0,p.w/2,p.h/2,0,0,Math.PI*2);
+      ctx.fillStyle=p.color; ctx.fill(); ctx.restore();
+    });
+    requestAnimationFrame(loop);
+  })();
+})();
+</script>
+</body>
+</html>
